@@ -16,19 +16,19 @@ class AudioStreamer {
   static const EventChannel _noiseEventChannel =
       EventChannel(EVENT_CHANNEL_NAME);
 
-  Stream<List<int>> _stream;
+  Stream<List<double>> _stream;
   StreamSubscription<List<dynamic>> _subscription;
 
   void _print(String t) {
     if (debug) print(t);
   }
 
-  Stream<List<int>> get audioStream {
+  Stream<List<double>> get audioStream {
     if (_stream == null) {
       _stream = _noiseEventChannel
           .receiveBroadcastStream()
           .map((buffer) => buffer as List<dynamic>)
-          .map((list) => list.map((e) => int.parse('$e')).toList());
+          .map((list) => list.map((e) => double.parse('$e')).toList());
     }
     return _stream;
   }
