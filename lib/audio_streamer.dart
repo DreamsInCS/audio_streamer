@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 
 /** A [AudioStreamer] object is reponsible for connecting
@@ -6,29 +7,41 @@ import 'package:flutter/services.dart';
 const String EVENT_CHANNEL_NAME = 'audio_streamer.eventChannel';
 
 class AudioStreamer {
+  static const INT16_MAX = 32767;
   bool _isRecording = false;
   bool debug = false;
 
   AudioStreamer({this.debug = false});
 
-  int get sampleRate => 44100;
+  int get sampleRate => 22050;
 
   static const EventChannel _noiseEventChannel =
       EventChannel(EVENT_CHANNEL_NAME);
 
-  Stream<List<double>> _stream;
+  // Stream<List<double>> _stream;
+  Stream<List<int>> _stream;
   StreamSubscription<List<dynamic>> _subscription;
 
   void _print(String t) {
     if (debug) print(t);
   }
 
-  Stream<List<double>> get audioStream {
+  // Stream<List<double>> get audioStream {
+  Stream<List<int>> get audioStream {
     if (_stream == null) {
       _stream = _noiseEventChannel
           .receiveBroadcastStream()
           .map((buffer) => buffer as List<dynamic>)
-          .map((list) => list.map((e) => double.parse('$e')).toList());
+          // .map((list) => list.map((e) => double.parse('$e')).toList());
+          .map((list) {
+        if (Platform.isAndroid) {
+          return list.map((e) => int.parse('$e')).toList();
+        } else /*if (Platform.isIOS)*/ {
+          return list
+              .map((e) => (double.parse('$e') * INT16_MAX).toInt())
+              .toList();
+        }
+      });
     }
     return _stream;
   }
