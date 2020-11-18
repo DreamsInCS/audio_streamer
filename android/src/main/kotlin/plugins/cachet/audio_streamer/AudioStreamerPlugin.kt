@@ -23,10 +23,13 @@ public class AudioStreamerPlugin : FlutterPlugin, RequestPermissionsResultListen
 
     /// Constants
     private val eventChannelName = "audio_streamer.eventChannel"
-    private val sampleRate = 44100
-    private var bufferSize = 6400 * 2; /// Magical number!
-    private val maxAmplitude = 32767 // same as 2^15
+    private val sampleRate = 22050
     private val logTag = "AudioStreamerPlugin"
+    private var bufferSize = AudioRecord.getMinBufferSize(
+        sampleRate,
+        AudioFormat.CHANNEL_IN_MONO, 
+        AudioFormat.ENCODING_PCM_16BIT
+    )
 
     /// Variables (i.e. will change value)
     private var eventSink: EventSink? = null
@@ -99,7 +102,7 @@ public class AudioStreamerPlugin : FlutterPlugin, RequestPermissionsResultListen
     private fun streamMicData() {
         Thread(Runnable {
             Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
-            val audioBuffer = ShortArray(bufferSize / 2)
+            val audioBuffer = ShortArray(1024)
             val record = AudioRecord(
                     MediaRecorder.AudioSource.DEFAULT,
                     sampleRate,
@@ -117,10 +120,9 @@ public class AudioStreamerPlugin : FlutterPlugin, RequestPermissionsResultListen
                 record.read(audioBuffer, 0, audioBuffer.size)
                 Handler(Looper.getMainLooper()).post {
                     /// Convert to list in order to send via EventChannel.
-                    val audioBufferList = ArrayList<Double>()
-                    for (impulse in audioBuffer) {
-                        val normalizedImpulse = impulse.toDouble() / maxAmplitude.toDouble()
-                        audioBufferList.add(normalizedImpulse)
+                    val audioBufferList = ArrayList<Short>()
+                    for (audio in audioBuffer) {
+                        audioBufferList.add(audio)
                     }
                     eventSink!!.success(audioBufferList)
                 }
